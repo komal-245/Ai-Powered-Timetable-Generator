@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: timetable, POSTGRES_PASSWORD: timetable, POSTGRES_DB: timetable }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U timetable"], interval: 5s, retries: 10 }
+  backend:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    environment:
+      DATABASE_URL: postgresql://timetable:timetable@db:5432/timetable
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["8000:8000"]
+  frontend:
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    depends_on: [backend]
+    ports: ["8080:80"]
+volumes: { pgdata: {} }
